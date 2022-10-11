@@ -9,7 +9,21 @@
 </head>
 
 <body>
-
+  <header>
+    <div class="name">
+      <H1>Movisions Specialist System</H1>
+    </div>
+    <div class="nav">
+      <ul>
+        <a href="login.php">
+          <li>Login</li>
+        </a>
+        <a href="register.php">
+          <li>Register</li>
+        </a>
+      </ul>
+    </div>
+  </header>
 </body>
 
 </html>

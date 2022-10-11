@@ -5,12 +5,14 @@
   <meta charset="UTF-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pending Appointment</title>
+  <title>Registration</title>
 </head>
 
 <body>
-
-
+  <h1>
+    Registration page
+  </h1>
+  <a href="index.php">back</a>
 </body>
 
 </html>

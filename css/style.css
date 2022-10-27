@@ -1,0 +1,11 @@
+textarea {
+  resize: none;
+}
+
+@media print {
+  .btn,
+  .navbar-toggler,
+  .navbar-collapse {
+    display: none !important;
+  }
+}

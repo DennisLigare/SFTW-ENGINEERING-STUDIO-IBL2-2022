@@ -6,58 +6,44 @@ if (!$_SESSION || $_SESSION['user_type'] !== 'admin') {
   header("Location: ../index.php");
 }
 
-if (!isset($_GET['user']) && !isset($_GET['id'])) {
+if (!isset($_GET['user'])) {
   header("Location: admin.php");
 }
 $user_type = $_GET['user'];
-$user_id = $_GET['id'];
 
 $error_message = "";
 $success_message = "";
 
 require "../components/database.php";
-
 if ($_POST) {
-  if ($user_type == 'admin') {
-    $statement = $pdo->prepare(
-      "SELECT * FROM login WHERE login_username=:username"
-    );
-  } elseif ($user_type == 'specialist') {
-    $statement = $pdo->prepare(
-      "SELECT * FROM login WHERE login_username=:username"
-    );
-  } elseif ($user_type == 'patient') {
-    $statement = $pdo->prepare(
-      "SELECT * FROM login WHERE login_username=:username"
-    );
-  }
+  $statement = $pdo->prepare(
+    "SELECT * FROM login WHERE login_username=:username"
+  );
   $statement->bindValue(":username", $_POST['username']);
   $statement->execute();
   $login = $statement->fetch(PDO::FETCH_ASSOC);
 
-  $login_user_id = $login['login_admin_id'] ?? $login['login_specialist_id'] ?? $login['login_patient_id'] ?? '';
-
-  if ($login && $login_user_id == $user_id) {
+  if (!$login) {
 
     if ($user_type == 'admin') {
       $statement = $pdo->prepare(
-        "UPDATE admin 
-        SET admin_name=:full_name, admin_mobile=:mobile, admin_email=:email, admin_gender=:gender 
-        WHERE admin_id=:id"
+        "INSERT INTO admin 
+        (admin_name, admin_mobile, admin_email, admin_gender) 
+        VALUES (:full_name, :mobile, :email, :gender)"
       );
     } elseif ($user_type == 'patient') {
       $statement = $pdo->prepare(
-        "UPDATE patient 
-        SET patient_name=:full_name, patient_mobile=:mobile, patient_email=:email, patient_gender=:gender, patient_location=:location, patient_dob=:dob 
-        WHERE patient_id=:id"
+        "INSERT INTO patient 
+        (patient_name, patient_mobile, patient_email, patient_gender, patient_location, patient_dob) 
+        VALUES (:full_name, :mobile, :email, :gender, :location, :dob)"
       );
       $statement->bindValue(":location", $_POST['location']);
       $statement->bindValue(":dob", $_POST['dob']);
     } elseif ($user_type == 'specialist') {
       $statement = $pdo->prepare(
-        "UPDATE specialist 
-        SET specialist_name=:full_name, specialist_mobile=:mobile, specialist_email=:email, specialist_gender=:gender, specialist_location=:location 
-        WHERE specialist_id=:id"
+        "INSERT INTO specialist 
+        (specialist_name, specialist_mobile, specialist_email, specialist_gender, specialist_location) 
+        VALUES (:full_name, :mobile, :email, :gender, :location)"
       );
       $statement->bindValue(":location", $_POST['location']);
     }
@@ -65,63 +51,41 @@ if ($_POST) {
     $statement->bindValue(":mobile", $_POST['mobile']);
     $statement->bindValue(":email", $_POST['email']);
     $statement->bindValue(":gender", $_POST['gender']);
-    $statement->bindValue(":id", $user_id);
     $statement->execute();
 
+    $user_id = $pdo->lastInsertId();
+
+    $password = password_hash($_POST['password'], PASSWORD_BCRYPT);
     if ($user_type == 'admin') {
       $statement = $pdo->prepare(
-        "UPDATE login 
-        SET login_username=:username 
-        WHERE login_admin_id=:id"
+        "INSERT INTO login 
+        (login_username, login_password, login_rank, login_admin_id) 
+        VALUES (:username, :password, :rank, :user_id)"
       );
     } elseif ($user_type == 'patient') {
       $statement = $pdo->prepare(
-        "UPDATE login 
-        SET login_username=:username 
-        WHERE login_patient_id=:id"
+        "INSERT INTO login 
+        (login_username, login_password, login_rank, login_patient_id) 
+        VALUES (:username, :password, :rank, :user_id)"
       );
     } elseif ($user_type == 'specialist') {
       $statement = $pdo->prepare(
-        "UPDATE login 
-        SET login_username=:username 
-        WHERE login_specialist_id=:id"
+        "INSERT INTO login 
+        (login_username, login_password, login_rank, login_specialist_id) 
+        VALUES (:username, :password, :rank, :user_id)"
       );
     }
     $statement->bindValue(":username", $_POST['username']);
-    $statement->bindValue(":id", $user_id);
+    $statement->bindValue(":password", $password);
+    $statement->bindValue(":rank", $user_type);
+    $statement->bindValue(":user_id", $user_id);
     $statement->execute();
 
-    $success_message = "User updated successfully!";
+    $success_message = "User created successfully!";
   } else {
     $error_message = "A user with the same username exists.";
   }
 }
-
-if ($user_type == 'admin') {
-  $statement = $pdo->prepare(
-    "SELECT * FROM admin 
-    JOIN login 
-    ON admin_id=login_admin_id 
-    WHERE admin_id=:id"
-  );
-} elseif ($user_type == 'specialist') {
-  $statement = $pdo->prepare(
-    "SELECT * FROM specialist 
-    JOIN login 
-    ON specialist_id=login_specialist_id 
-    WHERE specialist_id=:id"
-  );
-} elseif ($user_type == 'patient') {
-  $statement = $pdo->prepare(
-    "SELECT * FROM patient 
-    JOIN login 
-    ON patient_id=login_patient_id 
-    WHERE patient_id=:id"
-  );
-}
-$statement->bindValue(":id", $user_id);
-$statement->execute();
-$user = $statement->fetch(PDO::FETCH_ASSOC);
 
 if ($_POST && $error_message) {
   $full_name = $_POST['full_name'];
@@ -132,13 +96,13 @@ if ($_POST && $error_message) {
   $location = $_POST['location'] ?? '';
   $dob = $_POST['dob'] ?? '';
 } else {
-  $full_name = $user['admin_name'] ?? $user['specialist_name'] ?? $user['patient_name'];
-  $username = $user['login_username'] ?? $user['login_username'] ?? $user['login_username'];
-  $mobile = $user['admin_mobile'] ?? $user['specialist_mobile'] ?? $user['patient_mobile'];
-  $email = $user['admin_email'] ?? $user['specialist_email'] ?? $user['patient_email'];
-  $gender = $user['admin_gender'] ?? $user['specialist_gender'] ?? $user['patient_gender'];
-  $location = $user['specialist_location'] ?? $user['patient_location'] ?? '';
-  $dob = $user['patient_dob'] ?? '';
+  $full_name = '';
+  $username = '';
+  $mobile = '';
+  $email = '';
+  $gender = '';
+  $location = '';
+  $dob = '';
 }
 
 
@@ -156,11 +120,11 @@ include "../components/navigation.php";
     <form method="POST" class="border w-75 mx-auto p-3 shadow-sm">
       <h1 class="text-center text-primary border-3 border-bottom border-primary pb-3">
         <?php if ($user_type == 'admin') : ?>
-          Edit Admin
+          Add Admin
         <?php elseif ($user_type == 'specialist') : ?>
-          Edit Specialist
+          Add Specialist
         <?php elseif ($user_type == 'patient') : ?>
-          Edit Patient
+          Add Patient
         <?php endif; ?>
       </h1>
       <?php if ($error_message) : ?>
@@ -217,14 +181,26 @@ include "../components/navigation.php";
           </div>
         </div>
       <?php endif; ?>
+      <div class="row mb-3">
+        <div class="col">
+          <label for="password" class="form-label fw-bold">Password:</label>
+          <input type="password" name="password" id="password" class="form-control" placeholder="Enter password" required>
+        </div>
+        <div class="col">
+          <label for="confirm_password" class="form-label fw-bold">Confirm Password:</label>
+          <input type="password" name="confirm_password" id="confirm_password" class="form-control" placeholder="Confirm password" required>
+        </div>
+      </div>
       <div class="mb-3">
-        <button type="submit" class="btn btn-success">Update</button>
+        <button type="reset" class="btn btn-secondary">Reset</button>
+        <button type="submit" class="btn btn-primary">Add</button>
       </div>
     </form>
 
   </div>
 </main>
 
+<script src="../js/script.js"></script>
 <script src="../js/alerts.js"></script>
 
 <?php include "../components/footer.php" ?>

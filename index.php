@@ -37,7 +37,6 @@ include "components/navigation.php";
     </div>
 
   </div>
-
 </main>
 
 <?php include "components/footer.php"; ?>
